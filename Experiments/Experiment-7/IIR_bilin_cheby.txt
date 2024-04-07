@@ -1,0 +1,195 @@
+clc;
+close all;
+format long;
+T = 1; %Time
+fs = 1/T;
+%wp = input('enter the pass band frequency:');
+%ws = input('enter the stop band frequency:');
+%rp = input('enter the pass band attenuation:');
+%rs = input('enter the stop band attenuation:');
+
+%OR LET'S TAKE THE VALUES:
+wp = 0.35*pi;
+ws = 0.7*pi;
+rp = 0.9;
+rs = 0.275;
+
+%%%%% A:: Calculation of op and os in impulse invariant method
+% For impulse invariant, comment out block of code under SECTION B::
+%{
+op = wp/T;
+os = ws/T;
+display(op);
+display(os);
+%}
+%%%%% B:: Calculation of op and os in bilinear method; 
+% For bilinear, comment out block of code under SECTION A::
+
+op = (2/T)*tan(wp/2);
+os = (2/T)*tan(ws/2);
+display(op);
+display(os);
+
+%%%%% Calculation of rP and rS
+
+rP = abs(20*log10(rp));
+rS = abs(20*log10(rs));
+display(rP);
+display(rS);
+
+%%%%% C:: Butterworth filter
+% For Butterworth filter, comment out [n,wc] = cheb1ord(op,os,rP,rS,'s') under SECTION D::
+
+%[n,wc] = buttord(op,os,rP,rS,'s'); %Butterworth filter order and cutoff frequency
+
+%{
+FUNCTION EXPLAINATION:
+[n,Wn] = buttord(Wp,Ws,Rp,Rs,'s') finds the minimum order n and cutoff 
+frequencies Wn for an analog Butterworth filter. Specify the frequencies 
+Wp and Ws in radians per second. The passband or the stopband can be infinite
+%}
+
+%%%%% D:: Chebyshev filter
+% For Chebyshev filter, comment out buttord(op,os,rP,rS,'s')under SECTION C::
+
+[n,wc] = cheb1ord(op,os,rP,rS,'s'); %Chebyshev Type I filter order %cheb<one>ord (not L)
+
+%{
+FUNCTION EXPLAINATION:
+[n,Wp] = cheb1ord(Wp,Ws,Rp,Rs,'s') finds the minimum order n and cutoff frequencies
+Wp for an analog Chebyshev Type I filter. You specify the frequencies Wp and Ws 
+in radians per second, and the passband or the stopband can be infinite.
+%}
+
+display(n);
+display(wc);
+
+%%%%% E:: Butterworth analog filter prototype
+
+%[z,p,k] = buttap(n);
+
+%{
+FUNCTION EXPLAINATION:
+[z,p,k] = buttap(n) returns the poles and gain of an order n Butterworth analog lowpass filter prototype. 
+%}
+
+%%%%% F:: Chebyshev Type I analog lowpass filter prototype
+
+[z,p,k] = cheb1ap(n,rP); %Chebyshev %cheb<one>ap (not L)
+
+%{
+FUNCTION EXPLAINATION:
+[z,p,k] = cheb1ap(n,Rp) returns the poles and gain of an order n Chebyshev Type I analog lowpass filter
+prototype with Rp dB of ripple in the passband.
+%}
+
+display(z);
+display(p);
+display(k);
+
+%%%%% G:: Butterworth IIR filter design using specification object
+
+%[b,a] = butter(n,1,'low','s'); 
+%{
+FUNCTION EXPLAINATION:
+[b,a] = butter(n,Wn,'ftype','s') designs a order n highpass, lowpass, or bandstop filter in analog domain,
+with normalized cutoff frequency Wn. Cutoff frequency is that frequency where the magnitude 
+response of the filter is sqrt(1/2). For butter, the normalized cutoff frequency Wn must be 
+a number between 0 and 1, where 1 corresponds to the Nyquist frequency, pi radians per sample.
+Wn= fc/(fs/2)
+Here the string 'ftype' is one of the following:
+
+    'high' for a highpass digital filter with normalized cutoff frequency Wn
+    'low' for a lowpass digital filter with normalized cutoff frequency Wn
+    'stop' for an order 2*n bandstop digital filter if Wn is a two-element vector, Wn = [w1 w2]. 
+     The stopband is w1 < w < w2.
+%}
+
+%%%%% H::Chebyshev Type I filter using specification object
+
+[b,a] = cheby1(n,rP,1,'low','s'); %cheby<one> (not L)
+
+%{
+FUNCTION EXPLAINATION:
+[b,a] = cheby1(n,Rp,Wn,'ftype','s') designs a order n highpass, lowpass, or bandstop filter in analog domain,
+with normalized passband edge frequency Wn. Normalized passband edge frequency is the frequency at which the 
+magnitude response of the filter is equal to -Rp dB. For cheby1, the normalized passband edge frequency Wn must 
+be a number between 0 and 1, where 1 corresponds to the Nyquist frequency, pi radians per sample.
+
+Here the string 'ftype' is one of the following:
+
+    'high' for a highpass digital filter with normalized passband edge frequency Wn
+    'low' for a lowpass digital filter with normalized passband edge frequency Wn
+    'stop' for an order 2*n bandstop digital filter if Wn is a two-element vector, Wn = [w1 w2]. 
+     The stopband is w1 < w < w2.
+%}
+
+
+display(b);
+display(a);
+
+%%%%% I:: Change cutoff frequency for lowpass analog filter
+
+[bt,at] = lp2lp(b,a,wc);
+
+%{
+FUNCTION EXPLAINATION:
+lp2lp transforms an analog lowpass filter prototype with a cutoff angular frequency of 1 rad/s 
+into a lowpass filter with any specified cutoff angular frequency. The transformation is one step 
+in the digital filter design process for the butter, cheby1, cheby2, and ellip functions.
+
+lp2bp is the bandpass version of this transformation
+lp2bs is the bandstop version of this transformation
+lp2hp is the highpass version of this transformation
+%}
+
+display(bt);
+display(at);
+s = tf(bt,at);
+display(s);
+
+w = logspace(-10,10);
+%{
+FUNCTION EXPLAINATION:
+y = logspace(a,b) generates a row vector y of 50 logarithmically spaced 
+points between decades 10^a and 10^b. The logspace function is especially 
+useful for creating frequency vectors. The function is the logarithmic 
+equivalent of linspace and the ‘:’ operator
+%}
+
+%%%%% J:: Frequency response of analog filter
+freqs(bt,at,w); 
+%{
+FUNCTION EXPLAINATION:
+h = freqs(b,a,w) returns the complex frequency response of the analog 
+filter specified by the coefficient vectors b and a, evaluated at the 
+angular frequencies w.
+%}
+
+%%%%% K:: Impulse invariance method for A-to-D filter conversion
+%[bz,az] = impinvar(bt,at,fs);
+%{
+FUNCTION EXPLAINATION:
+[bz,az] = impinvar(b,a,fs)creates a digital filter with numerator and
+denominator coefficients bz and az,respectively, whose impulse response is 
+equal to the impulse response of the analog filter with coefficients b and 
+a, scaled by 1/fs. If you leave out the argument fs, or specify fs as the 
+empty vector [], it takes the default value of 1 Hz.
+%}
+
+[bz,az] = bilinear(bt,at,fs); %Bilinear method
+display(bz);
+display(az);
+z = tf(bz,az,T,'variable','z^-1');
+display(z); %Required TRANSFER FUNCTION
+w = 0:pi/100:pi;
+%%freqz(bz,az,w);%Frequency response of digital filter
+zplane(bz,az); %ZERO-POLE Plot
+fvtool(bz,az); %filter visualization tool
+
+
+
+
+
+
+
